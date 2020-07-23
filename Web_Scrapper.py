@@ -18,7 +18,9 @@ def sign_in(address, signin_info):
     driver.get(address)
     username(driver, signin_info[0])
     password_info(driver, signin_info[1])
-    member_dir(driver, "Torrance", "CA")
+    city = input("Enter name of the city in its state")
+    state = input("Enter state's abbreviation in uppercase. E.g. California = CA\n")
+    member_dir(driver, city, state)
     return 0
 
 
