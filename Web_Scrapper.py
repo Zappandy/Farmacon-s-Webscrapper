@@ -7,7 +7,7 @@ access_data = [w[:-1] for w in user_data.readlines()]  # cleaning up new line ch
 user_data.close()
 
 
-def sign_in(address, signin_info):
+def main_func(address, signin_info):
     """
 
     :param signin_info:
@@ -16,11 +16,11 @@ def sign_in(address, signin_info):
     """
     driver = webdriver.Edge(Path)
     driver.get(address)
+    driver.implicitly_wait(1)
+    driver.find_element_by_id("login_link").click()
     username(driver, signin_info[0])
     password_info(driver, signin_info[1])
-    city = input("Enter name of the city in its state")
-    state = input("Enter state's abbreviation in uppercase. E.g. California = CA\n")
-    member_dir(driver, city, state)
+    member_dir(driver, "Torrance", "CA")
     return 0
 
 
@@ -28,8 +28,7 @@ def username(web_browser, user):
     """
     Submits username data
     """
-    web_browser.find_element_by_id("login_link").click()
-    web_browser.implicitly_wait(5)
+    web_browser.implicitly_wait(1)
     userElm = web_browser.find_element_by_id("login_eml_address")
     userElm.send_keys(user)
     userElm.submit()
@@ -41,7 +40,7 @@ def password_info(web_browser, password):
     """
     passElm = web_browser.find_element_by_class_name("toggle-password-input")
     passElm.send_keys(password)
-    web_browser.implicitly_wait(5)
+    web_browser.implicitly_wait(1)
     web_browser.find_element_by_id("LoginButton").click()
 
 
@@ -51,18 +50,36 @@ def member_dir(web_browser, city, state):
     :param web_browser:
     :return:
     """
+    doctor_xpath = "/html/body/div[1]/section[2]/div/div/div[2]/div/form/div[3]/ul/li[1]"
     web_browser.implicitly_wait(5)
     web_browser.find_element_by_id("membership").click()
     web_browser.find_element_by_link_text('Member Directory').click()
+    web_browser.implicitly_wait(1)
     cityElm = web_browser.find_element_by_id("THE_CITY")
     cityElm.send_keys(city)
+    web_browser.implicitly_wait(1)
     web_browser.find_element_by_xpath(f"//select[@name='THE_STATE']/option[text()='{state}']").click()
-    web_browser.find_element_by_name("search_button").click()    
-    doctor_list = web_browser.find_element_by_class_name("list1")
-    # for doc in doctor_list:
-    #     contact_info = doc.find_elements_by_css_selector("li a")
-    #     contact_info.get_attribute("href").click()
-    #     break
+    web_browser.implicitly_wait(1)
+    web_browser.find_element_by_name("search_button").click()
+    web_browser.implicitly_wait(1)
+    result_list = web_browser.find_element_by_class_name("list1")
+    doctors = result_list.find_elements_by_css_selector("li a")
+    doc_data = []
+    for doc in doctors:
+        doc.click()
+        #href = doc.get_attribute("href")
+        #web_browser.execute_script("window.open('" + href +"');")
+        web_browser.implicitly_wait(1)
+        #data_list = web_browser.find_element_by_id("member_panel")
+        data_list = web_browser.find_element_by_xpath(doctor_xpath)
+        doc_data.append(data_list)
+        web_browser.implicitly_wait(1)
+
+    print(doc_data)
+    return doc_data
 
 
-sign_in(home_page, access_data)
+
+
+main_func(home_page, access_data)
+
