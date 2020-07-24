@@ -16,12 +16,10 @@ def main_func(address, signin_info):
     """
     driver = webdriver.Edge(Path)
     driver.get(address)
-    driver.implicitly_wait(1)
     driver.find_element_by_id("login_link").click()
     username(driver, signin_info[0])
     password_info(driver, signin_info[1])
     member_dir(driver, "Torrance", "CA")
-    return 0
 
 
 def username(web_browser, user):
@@ -51,8 +49,9 @@ def member_dir(web_browser, city, state):
     :return:
     """
     doctor_xpath = "/html/body/div[1]/section[2]/div/div/div[2]/div/form/div[3]/ul/li[1]"
-    web_browser.implicitly_wait(5)
+    web_browser.implicitly_wait(1)
     web_browser.find_element_by_id("membership").click()
+    web_browser.implicitly_wait(1)
     web_browser.find_element_by_link_text('Member Directory').click()
     web_browser.implicitly_wait(1)
     cityElm = web_browser.find_element_by_id("THE_CITY")
@@ -69,10 +68,11 @@ def member_dir(web_browser, city, state):
         doc.click()
         #href = doc.get_attribute("href")
         #web_browser.execute_script("window.open('" + href +"');")
-        web_browser.implicitly_wait(1)
+        web_browser.implicitly_wait(10)
         #data_list = web_browser.find_element_by_id("member_panel")
-        data_list = web_browser.find_element_by_xpath(doctor_xpath)
-        doc_data.append(data_list)
+        htmlElem = web_browser.find_element_by_xpath(doctor_xpath)
+        web_browser.implicitly_wait(10)
+        doc_data.append(htmlElem.get_attribute("innerHtml"))
         web_browser.implicitly_wait(1)
 
     print(doc_data)
