@@ -19,11 +19,8 @@ class Farmacon_Scrapper(object):
         self.no_element = selenium.common.exceptions.NoSuchElementException
         self.driver.get("https://www.asn-online.org")
 
-    def wait_page(self, element_tup, iterable=False):
-        if not iterable:
-            element_present = EC.presence_of_element_located(element_tup)
-        else:
-            element_present = EC.presence_of_all_elements_located(element_tup)
+    def wait_page(self, element_tup):
+        element_present = EC.presence_of_element_located(element_tup)
         try:
             Elm = WebDriverWait(self.driver, 10).until(element_present)
             return Elm
@@ -60,7 +57,7 @@ class Farmacon_Scrapper(object):
 
     def member_data(self):
         doctor_list = self.member_dir("Torrance", "CA")
-        doc_dataXPATH = "//ul[@class='list1 grey']/li[1]"#  "//*[@id='member_panel']/ul/li[1]"
+        doc_data_xpath = "//ul[@class='list1 grey']/li[1]"#  "//*[@id='member_panel']/ul/li[1]"
         #doctor_listXPATH = "//*[@id='results_panel']/ul"
         for e, doc in enumerate(doctor_list):
             href = doc.get_attribute("href")
@@ -68,11 +65,11 @@ class Farmacon_Scrapper(object):
             self.driver.execute_script("window.open('');")
             self.driver.switch_to.window(self.driver.window_handles[1])
             self.driver.get(href)
-            doc_Elm = self.wait_page((By.XPATH, doc_dataXPATH), iterable=True)
-            member_data = [li for li in doc_Elm]
+            doc_Elm = self.wait_page((By.XPATH, doc_data_xpath))
+            content = self.driver.execute_script('return arguments[0].textContent;', doc_Elm)
             self.driver.close()
             self.driver.switch_to.window(self.driver.window_handles[0])
-            print(member_data)
+
         #return raw_data
 
 
@@ -84,4 +81,3 @@ def test(scrapper, signin_info):
     asn.member_data()
 
 test(Farmacon_Scrapper, access_data)
-
