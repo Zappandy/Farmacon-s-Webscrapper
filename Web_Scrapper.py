@@ -66,11 +66,13 @@ class Farmacon_Scrapper(object):
             self.driver.switch_to.window(self.driver.window_handles[1])
             self.driver.get(href)
             doc_Elm = self.wait_page((By.XPATH, doc_data_xpath))
-            content = self.driver.execute_script('return arguments[0].textContent;', doc_Elm)
+            content = doc_Elm.get_attribute("textContent")
+            #content = self.driver.execute_script('return arguments[0].textContent;', doc_Elm)
+            print(content)
             self.driver.close()
             self.driver.switch_to.window(self.driver.window_handles[0])
 
-        #return raw_data
+        
 
 
 def test(scrapper, signin_info):
