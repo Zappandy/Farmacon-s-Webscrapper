@@ -29,3 +29,10 @@ https://stackoverflow.com/questions/28110008/python-selenium-wait-until-element-
 https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-tab-4cc606b73388
 
 https://www.selenium.dev/selenium/docs/api/py/webdriver/selenium.webdriver.common.by.html
+
+
+### Protect yourself during crawling
+
+https://able.bio/rhett/web-scraping-with-python-using-beautiful-soup-and-selenium--44jqsra
+
+https://stackoverflow.com/questions/42954422/apt-time-between-requests-in-python
