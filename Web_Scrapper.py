@@ -120,6 +120,10 @@ class VCardParser(object):
     doc_num = 0
 
     def __init__(self, address):
+        """
+
+        :param address: local dir path where the downloads folder is located
+        """
         self.fileRegex = re.compile(r".vcf$")
         self.address = address
         self.doctors = {}
@@ -128,11 +132,14 @@ class VCardParser(object):
     def __str__(self):
         return self.df.to_string(index=False)
 
-    
     def __repr__(self):
-        return f'{self.df}'
+        return self.df.to_string(index=False)
 
     def data_parser(self):
+        """
+        Finds every vcf file in given path and parses them to clean their data
+        Mutates the initialized dataframe with the vcf data.
+        """
         for file in os.listdir(self.address):
             if self.fileRegex.search(file):
                 VCardParser.doc_num += 1
@@ -149,6 +156,9 @@ class VCardParser(object):
 
     @staticmethod
     def key_cleaner(data_strct):
+        """
+        cleans up the keys from the initialized dictionary
+        """
         data_strct['Phone'] = data_strct.pop('tel')
         data_strct['Full name'] = data_strct.pop('fn')
         data_strct['Organization'] = data_strct.pop('org')
@@ -160,6 +170,11 @@ class VCardParser(object):
 
     @staticmethod
     def value_cleaner(data_strct):
+        """
+        cleans up the values from the initialized dictionary
+        if they are empty, they are stored as NaN and if they are mutable
+        iterables of length one they are unpacked.
+        """
         for k, v in data_strct.items():
             if v[0].value == '':
                 data_strct[k] = 'NaN'
