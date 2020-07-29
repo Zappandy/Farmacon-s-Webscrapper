@@ -30,6 +30,10 @@ https://medium.com/@pavel.tashev/python-and-selenium-open-focus-and-close-a-new-
 
 https://www.selenium.dev/selenium/docs/api/py/webdriver/selenium.webdriver.common.by.html
 
+Vobject doc https://stackoverflow.com/questions/35825919/vcard-parser-with-python
+http://vobject.skyhouseconsulting.com/epydoc/
+https://github.com/eventable/vobject
+
 
 ### Protect yourself during crawling
 
