@@ -110,9 +110,7 @@ class FarmaconScrapper(object):
             vCard.click()
             self.driver.implicitly_wait(10)
             self.driver.close()
-            self.driver.switch_to.window(self.driver.window_handles[0])
-            #TODO: create vcard class or function https://stackoverflow.com/questions/35825919/vcard-parser-with-python
-            # http://vobject.skyhouseconsulting.com/epydoc/  https://github.com/eventable/vobject
+            self.driver.switch_to.window(self.driver.window_handles[0])            
         return self.backup_downloads  
 
 
