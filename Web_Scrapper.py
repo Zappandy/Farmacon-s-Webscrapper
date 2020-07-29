@@ -149,7 +149,7 @@ class VCardParser(object):
                 self.key_cleaner(vcard_data)
                 self.value_cleaner(vcard_data)
                 self.doctors.setdefault(f"doctor {VCardParser.doc_num}", vcard_data)
-                #vcard.prettyPrint()
+                #vcard.prettyPrint()  prints vcard. can be removed. Unneeded for parser
         self.df = pd.DataFrame.from_dict(self.doctors, orient='index')      
 
     @staticmethod
