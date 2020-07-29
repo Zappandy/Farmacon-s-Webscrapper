@@ -1,8 +1,12 @@
+import os
+import pandas as pd
+import re
 import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import vobject
 
 
 user_data = open("./Selenium Drivers/account_data.txt")
@@ -10,7 +14,7 @@ access_data = [w[:-1] for w in user_data.readlines()]  # cleaning up new line ch
 user_data.close()
 
 
-class Farmacon_Scrapper(object):
+class FarmaconScrapper(object):
     Path = "Selenium Drivers/Edge_Driver/msedgedriver.exe"    
 
     def __init__(self, sigin_info):
@@ -19,10 +23,12 @@ class Farmacon_Scrapper(object):
         :param sigin_info: sign in info stored in an iterable (list). 
         This is stored as access data on script
         """
-        self.driver = webdriver.Edge(Farmacon_Scrapper.Path) 
+        self.driver = webdriver.Edge(FarmaconScrapper.Path)
         self.sigin_info = sigin_info
         self.no_element = selenium.common.exceptions.NoSuchElementException
+        self.timeout = selenium.common.exceptions.TimeoutException
         self.driver.get("https://www.asn-online.org")
+        self.backup_downloads = []
 
     def wait_page(self, element_tup):
         """
@@ -36,10 +42,10 @@ class Farmacon_Scrapper(object):
         try:
             Elm = WebDriverWait(self.driver, 10).until(element_present)
             return Elm
-        except self.no_element as error:
+        except (self.timeout, self.no_element) as error:
             self.driver.quit()
-            print(f"{element_tup[1]} not found\nError:{error}")
-            return 1
+            print(f"{error}")
+            exit()  #sys.exit(1)
 
     def login_link(self):
         """
@@ -88,32 +94,77 @@ class Farmacon_Scrapper(object):
     def member_data(self):
         """
         
-        :return:
+        :return: an iterable containing the links where the data in Vcard format is. 
+        User may need to be signed in, though. Therefore why this method 
+        downloads them to the default directory when using MS Edge
         """
         doctor_list = self.member_dir("Torrance", "CA")
-        doc_data_xpath = "//ul[@class='list1 grey']/li[1]"#  "//*[@id='member_panel']/ul/li[1]"
-        self.driver.find_element_by_css_selector("[title^='Download this info as a vCard']")
-        #doctor_listXPATH = "//*[@id='results_panel']/ul"
         for e, doc in enumerate(doctor_list):
             href = doc.get_attribute("href")
-            # possible issues
             self.driver.execute_script("window.open('');")
             self.driver.switch_to.window(self.driver.window_handles[1])
             self.driver.get(href)
-            doc_Elm = self.wait_page((By.XPATH, doc_data_xpath))
-            content = doc_Elm.get_attribute("textContent")  # innerText vs source
-            #content = self.driver.execute_script('return arguments[0].textContent;', doc_Elm)
+            vCard = self.wait_page((By.CLASS_NAME, "alignright"))
+            link_href = vCard.get_attribute("href")
+            self.backup_downloads.append(link_href)
+            vCard.click()
+            self.driver.implicitly_wait(10)
             self.driver.close()
             self.driver.switch_to.window(self.driver.window_handles[0])
+            #TODO: create vcard class or function https://stackoverflow.com/questions/35825919/vcard-parser-with-python
+            # http://vobject.skyhouseconsulting.com/epydoc/  https://github.com/eventable/vobject
+        return self.backup_downloads  
 
 
+class VCardParser(object):
+    doc_num = 0
 
+    def __init__(self, address):
+        self.fileRegex = re.compile(r".vcf$")
+        self.address = address
+        self.doctors = {}
+        self.df = pd.DataFrame({'Empty' : []})
 
-def test(scrapper, signin_info):
-    asn = scrapper(signin_info)
-    asn.login_link()
-    asn.username()
-    asn.password()  # access_data
-    asn.member_data()
+    def __str__(self):
+        return self.df.to_string(index=False)
 
-test(Farmacon_Scrapper, access_data)
+    
+    def __repr__(self):
+        return f'{self.df}'
+
+    def data_parser(self):
+        for file in os.listdir(self.address):
+            if self.fileRegex.search(file):
+                VCardParser.doc_num += 1
+                match = open(self.address + file, 'r')
+                match_stored = match.read()
+                match.close()
+                vcard = vobject.readOne(match_stored)
+                vcard_data = vcard.contents.copy()
+                self.key_cleaner(vcard_data)
+                self.value_cleaner(vcard_data)
+                self.doctors.setdefault(f"doctor {VCardParser.doc_num}", vcard_data)
+                #vcard.prettyPrint()
+          self.df = pd.DataFrame.from_dict(self.doctors, orient='index')      
+
+    @staticmethod
+    def key_cleaner(data_strct):
+        data_strct['Phone'] = data_strct.pop('tel')
+        data_strct['Full name'] = data_strct.pop('fn')
+        data_strct['Organization'] = data_strct.pop('org')
+        data_strct['Email'] = data_strct.pop('email')
+        data_strct['Address'] = data_strct.pop('adr')
+        data_strct['Title'] = data_strct.pop('title')
+        data_strct.pop('version')
+        data_strct.pop('n')
+
+    @staticmethod
+    def value_cleaner(data_strct):
+        for k, v in data_strct.items():
+            if v[0].value == '':
+                data_strct[k] = 'NaN'
+            elif len(v) == 1:
+                v[0].value = "".join(v[0].value) if type(v[0].value) is list else v[0].value
+                data_strct[k] = v[0].value
+            else:
+                data_strct[k] = [i.value for i in v]
