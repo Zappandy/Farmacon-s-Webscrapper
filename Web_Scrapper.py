@@ -9,15 +9,13 @@ from selenium.webdriver.support import expected_conditions as EC
 import vobject
 
 
-user_data = open("./Selenium Drivers/account_data.txt")
-access_data = [w[:-1] for w in user_data.readlines()]  # cleaning up new line char
-user_data.close()
+common_exceptions = (selenium.common.exceptions.NoSuchElementException, selenium.common.exceptions.TimeoutException)
 
 
 class FarmaconScrapper(object):
     Path = "Selenium Drivers/Edge_Driver/msedgedriver.exe"    
 
-    def __init__(self, sigin_info):
+    def __init__(self, sigin_info, city, state):
         """
 
         :param sigin_info: sign in info stored in an iterable (list). 
@@ -25,10 +23,10 @@ class FarmaconScrapper(object):
         """
         self.driver = webdriver.Edge(FarmaconScrapper.Path)
         self.sigin_info = sigin_info
-        self.no_element = selenium.common.exceptions.NoSuchElementException
-        self.timeout = selenium.common.exceptions.TimeoutException
         self.driver.get("https://www.asn-online.org")
         self.backup_downloads = []
+        self.city = city
+        self.state = state
 
     def wait_page(self, element_tup):
         """
@@ -42,7 +40,7 @@ class FarmaconScrapper(object):
         try:
             Elm = WebDriverWait(self.driver, 10).until(element_present)
             return Elm
-        except (self.timeout, self.no_element) as error:
+        except common_exceptions as error:
             self.driver.quit()
             print(f"{error}")
             exit()  #sys.exit(1)
@@ -74,18 +72,18 @@ class FarmaconScrapper(object):
         passElm.send_keys(passwrd)
         self.wait_page((By.ID, "LoginButton")).click()
 
-    def member_dir(self, city, state):
+    def member_dir(self):
         """
 
         :param city: City where doctors/members are located
         :param state: State where doctors/members are located
         :return: List of doctors/members found in the specified area
         """
-        stateDropdown_xpath = f"//select[@name='THE_STATE']/option[text()='{state}']"
+        stateDropdown_xpath = f"//select[@name='THE_STATE']/option[text()='{self.state}']"
         self.wait_page((By.ID, "membership")).click()
         self.wait_page((By.LINK_TEXT, "Member Directory")).click()
         cityElm = self.wait_page((By.ID, "THE_CITY"))
-        cityElm.send_keys(city)
+        cityElm.send_keys(self.city)
         self.wait_page((By.XPATH, stateDropdown_xpath)).click()
         self.wait_page((By.NAME, "search_button")).click()
         result_list = self.wait_page((By.CLASS_NAME, "list1"))
@@ -98,7 +96,7 @@ class FarmaconScrapper(object):
         User may need to be signed in, though. Therefore why this method 
         downloads them to the default directory when using MS Edge
         """
-        doctor_list = self.member_dir("Torrance", "CA")
+        doctor_list = self.member_dir()
         for e, doc in enumerate(doctor_list):
             href = doc.get_attribute("href")
             self.driver.execute_script("window.open('');")
@@ -110,8 +108,7 @@ class FarmaconScrapper(object):
             vCard.click()
             self.driver.implicitly_wait(10)
             self.driver.close()
-            self.driver.switch_to.window(self.driver.window_handles[0])            
-        return self.backup_downloads  
+            self.driver.switch_to.window(self.driver.window_handles[0])
 
 
 class VCardParser(object):
@@ -125,13 +122,13 @@ class VCardParser(object):
         self.fileRegex = re.compile(r".vcf$")
         self.address = address
         self.doctors = {}
-        self.df = pd.DataFrame({'Empty' : []})
+        self.df = pd.DataFrame({'': []})
 
     def __str__(self):
         return self.df.to_string(index=False)
 
     def __repr__(self):
-        return self.df.to_string(index=False)
+        return self.df.to_string
 
     def data_parser(self):
         """
@@ -149,8 +146,8 @@ class VCardParser(object):
                 self.key_cleaner(vcard_data)
                 self.value_cleaner(vcard_data)
                 self.doctors.setdefault(f"doctor {VCardParser.doc_num}", vcard_data)
-                #vcard.prettyPrint()  prints vcard. can be removed. Unneeded for parser
-        self.df = pd.DataFrame.from_dict(self.doctors, orient='index')      
+                #vcard.prettyPrint()
+        self.df = pd.DataFrame.from_dict(self.doctors, orient='index')
 
     @staticmethod
     def key_cleaner(data_strct):
@@ -162,7 +159,7 @@ class VCardParser(object):
         data_strct['Organization'] = data_strct.pop('org')
         data_strct['Email'] = data_strct.pop('email')
         data_strct['Address'] = data_strct.pop('adr')
-        data_strct['Title'] = data_strct.pop('title')
+        data_strct.pop('title')
         data_strct.pop('version')
         data_strct.pop('n')
 
@@ -173,11 +170,19 @@ class VCardParser(object):
         if they are empty, they are stored as NaN and if they are mutable
         iterables of length one they are unpacked.
         """
+        py_primitives = ('list', 'str', 'tuple', 'dict', 'str', 'int', 'float', 'bool', 'set')
         for k, v in data_strct.items():
-            if v[0].value == '':
-                data_strct[k] = 'NaN'
-            elif len(v) == 1:
-                v[0].value = "".join(v[0].value) if type(v[0].value) is list else v[0].value
-                data_strct[k] = v[0].value
+            data_strct[k] = [i.value for i in v]
+        Flag = True
+        while Flag:
+            for k, v in data_strct.items():
+                if type(v) not in py_primitives:
+                    data_strct[k] = str(v)
+                    break
+                if len(v) == 1 and type(v) is list:
+                    for i in v:
+                        data_strct[k] = i
+                    break
             else:
-                data_strct[k] = [i.value for i in v]
+                Flag = False
+
