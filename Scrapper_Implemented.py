@@ -54,8 +54,26 @@ def get_df(parser, download_dir):
     return data.df
 
 
+def clean_df(df):
+    """
+
+    :param df: dataframe to be further cleaned 
+    :return: newly mutated dataframe based on the company's needs
+    """
+    cleanRegex = re.compile(r"(\)+)|(\(+)|('+)")
+    df = df.drop(["Title"], axis=1)
+    for h in df.head(0):
+        df[h] = df[h].str.strip('[]\"\'():Address<>\t ')
+    for e, v in enumerate(df["Phone"]):
+        if cleanRegex.findall(v):
+            df.at[e, "Phone"] = cleanRegex.sub('', v)
+        elif "," in v and len(v) == 1:
+            df.at[e, "Phone"] = ''
+
+    return df
+    
 files = read_data("./Selenium Drivers/account_data.txt", "./Selenium Drivers/locations.txt")
 feed_scrapper(Web_Scrapper.FarmaconScrapper, files[0], files[1])
 
-asn_df = get_df(Web_Scrapper.VCardParser, "../../Downloads/passed/")   
+asn_df = clean_df(get_df(Web_Scrapper.VCardParser, "../../Downloads/passed/"))
 asn_df.to_csv('asn_data.csv', index=False)
