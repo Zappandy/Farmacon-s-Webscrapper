@@ -60,7 +60,8 @@ def clean_df(df):
     :param df: dataframe to be further cleaned 
     :return: newly mutated dataframe based on the company's needs
     """
-    cleanRegex = re.compile(r"(\)+)|(\(+)|('+)")
+    cleanRegex = re.compile(r"(\)+)|(\(+)|('+)|(\/+)")
+    cleansingPhoneregex = re.compile(r",.\D")
     df = df.drop(["Title"], axis=1)
     for h in df.head(0):
         df[h] = df[h].str.strip('[]\"\'():Address<>\t ')
@@ -69,6 +70,8 @@ def clean_df(df):
             df.at[e, "Phone"] = cleanRegex.sub('', v)
         elif "," in v and len(v) == 1:
             df.at[e, "Phone"] = ''
+        elif cleansingPhoneregex.search(v):
+            df.at[e, "Phone"] = cleansingPhoneregex.sub('', v)
 
     return df
     
